@@ -1,0 +1,17 @@
+services:
+  suivi-app-simple:
+    build:
+      context: .
+      dockerfile: Dockerfile.simple
+    container_name: suivi-mode-operatoire-simple
+    ports:
+      - "8080:5000"
+    environment:
+      - FLASK_ENV=production
+      - SIMULATION_MODE=true
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:5000/api/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3 

@@ -1,0 +1,48 @@
+# Version simplifiée pour développement/test (mode simulation)
+FROM node:18-alpine AS frontend-build
+
+WORKDIR /app/frontend
+COPY frontend/package*.json ./
+RUN npm ci --only=production
+COPY frontend/ ./
+RUN npm run build
+
+FROM python:3.11-slim
+
+# Installer les dépendances de base
+RUN apt-get update && apt-get install -y \
+    curl \
+    && rm -rf /var/lib/apt/lists/*
+
+WORKDIR /app
+
+# Installer les dépendances Python (sans pyodbc pour la simulation)
+COPY backend/requirements.txt ./
+RUN pip install --no-cache-dir -r requirements.txt gunicorn
+
+# Copier le backend et activer le mode simulation
+COPY backend/ ./
+RUN sed -i 's/SIMULATION_MODE = False/SIMULATION_MODE = True/' config.py
+
+# Copier le frontend
+COPY --from=frontend-build /app/frontend/build ./static
+
+# Script pour servir frontend + backend
+RUN echo "from flask import send_from_directory\n\
+import os\n\
+from app import app\n\
+\n\
+@app.route('/', defaults={'path': ''})\n\
+@app.route('/<path:path>')\n\
+def serve_frontend(path):\n\
+    if path != '' and os.path.exists(os.path.join('/app/static', path)):\n\
+        return send_from_directory('/app/static', path)\n\
+    else:\n\
+        return send_from_directory('/app/static', 'index.html')\n\
+\n\
+if __name__ == '__main__':\n\
+    app.run(host='0.0.0.0', port=5000, debug=False)" > server.py
+
+EXPOSE 5000
+
+CMD ["python", "server.py"] 
