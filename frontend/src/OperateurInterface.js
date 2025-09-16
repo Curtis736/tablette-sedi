@@ -1,5 +1,9 @@
 import React, { useState, useEffect } from 'react';
 
+const API_BASE = window.location.hostname === 'localhost' ? 'http://localhost:3000' : ('http://' + window.location.hostname + ':3000');
+// En mode séparé, on route les appels Flask vers le serveur Flask (port 5000)
+const API_BASE_FLASK = window.location.hostname === 'localhost' ? 'http://localhost:5000' : ('http://' + window.location.hostname + ':5000');
+
 const OperateurInterface = () => {
   const [operateurId, setOperateurId] = useState('');
   const [operateurNom, setOperateurNom] = useState('');
@@ -44,7 +48,7 @@ const OperateurInterface = () => {
     
     setLoadingHistorique(true);
     try {
-      const response = await fetch(`http://localhost:5000/api/historique-operateur/${operateurId}`);
+      const response = await fetch(API_BASE + `/api/historique-operateur/${operateurId}`);
       const data = await response.json();
       
       if (data.success) {
@@ -112,7 +116,7 @@ const OperateurInterface = () => {
     setError('');
     
     try {
-      const response = await fetch('http://localhost:5000/api/operateurs');
+      const response = await fetch(API_BASE + '/api/operateurs');
       const data = await response.json();
       
       if (data.success) {
@@ -185,7 +189,7 @@ const OperateurInterface = () => {
 
   const demarrerTravailAutomatique = async () => {
     try {
-      const response = await fetch('http://localhost:5000/api/demarrer-travail', {
+      const response = await fetch(API_BASE + '/api/demarrer-travail', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
@@ -218,7 +222,7 @@ const OperateurInterface = () => {
     setSuccess('');
 
     try {
-      const response = await fetch('http://localhost:5000/api/demarrer-travail', {
+      const response = await fetch(API_BASE + '/api/demarrer-travail', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
@@ -362,7 +366,7 @@ const OperateurInterface = () => {
     }
     
     try {
-      const response = await fetch(`http://localhost:5000/api/ltc-data/${codeLancement}`);
+      const response = await fetch(API_BASE + `/api/ltc-data/${codeLancement}`);
       const data = await response.json();
       
       if (data.success) {
@@ -401,7 +405,7 @@ const OperateurInterface = () => {
 
     try {
       // TODO: Remplacer par l'endpoint de la nouvelle table
-      const response = await fetch('http://localhost:5000/api/terminer-travail', {
+      const response = await fetch(API_BASE + '/api/terminer-travail', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
@@ -710,10 +714,6 @@ const OperateurInterface = () => {
             </div>
           </div>
         )}
-
-
-
-
 
         {/* Boutons de contrôle du travail */}
         {ltcData && (

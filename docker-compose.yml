@@ -1,23 +1,37 @@
-services:
-  suivi-app:
-    build: .
-    container_name: suivi-mode-operatoire
-    ports:
-      - "8080:5000"  # Port externe 8080 pour éviter les conflits
-    environment:
-      - FLASK_ENV=production
-      - DB_SERVER=SERVEURERP
-      - DB_USER=QUALITE
-      - DB_PASSWORD=QUALITE
-    volumes:
-      - app-data:/app/data
-    restart: unless-stopped
-    healthcheck:
-      test: ["CMD", "curl", "-f", "http://localhost:5000/api/health"]
-      interval: 30s
-      timeout: 10s
-      retries: 3
-      start_period: 40s
 
-volumes:
-  app-data: 
+
+
+services:
+  backend:
+    build:
+      context: ./backend
+      dockerfile: Dockerfile
+    environment:
+      - PORT=3000
+      - SQL_SERVER=SERVEURERP
+      - SQL_DATABASE=SEDI_ERP
+      - SQL_USER=QUALITE
+      - SQL_PASSWORD=QUALITE
+      - AUTO_BOOTSTRAP=0
+      - AUTO_EXPORT_ON_START=0
+    ports:
+      - "0.0.0.0:3000:3000"
+    restart: unless-stopped
+  
+  frontend:
+    build:
+      context: ./frontend
+      dockerfile: Dockerfile
+    ports:
+      - "0.0.0.0:8080:80"
+    restart: unless-stopped
+
+  dns:
+    image: jpillora/dnsmasq:latest
+    container_name: sedi-dns
+    volumes:
+      - ./dns/dnsmasq.conf:/etc/dnsmasq.conf
+    ports:
+      - "53:53/udp"
+      - "53:53/tcp"
+    restart: unless-stopped

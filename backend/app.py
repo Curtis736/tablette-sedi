@@ -447,12 +447,14 @@ def get_operateurs():
         
         cursor = conn.cursor()
         
-        # Votre requête exacte
+        # Requête directe dans SEDI_ERP pour récupérer les opérateurs réels
         query = '''
             SELECT TOP (1000) 
                 [Coderessource],
                 [Designation1]
             FROM [SEDI_ERP].[dbo].[RESSOURC]
+            WHERE [Typeressource] = 'O'
+            ORDER BY [Coderessource]
         '''
         
         cursor.execute(query)
@@ -468,6 +470,51 @@ def get_operateurs():
         
         conn.close()
         return jsonify({'operateurs': result, 'success': True})
+        
+    except Exception as e:
+        return jsonify({'error': str(e), 'success': False}), 500
+
+@app.route('/api/operateurs-badges', methods=['GET'])
+def get_operateurs_badges():
+    """Récupère tous les opérateurs qui ont badgé aujourd'hui (avec sessions actives)"""
+    try:
+        conn = get_db_connection()
+        if not conn:
+            return jsonify({'error': 'Impossible de se connecter à la base de données', 'success': False}), 500
+        
+        cursor = conn.cursor()
+        
+        # Requête pour récupérer les opérateurs avec sessions actives depuis SEDI_ERP
+        query = f'''
+            SELECT DISTINCT 
+                t.Ident,
+                r.Designation1,
+                COUNT(*) as NombreSessions,
+                MAX(t.DateCreation) as DerniereActivite,
+                t.Statut
+            FROM {CURRENT_TABLES['sessions']} t
+            LEFT JOIN [SEDI_ERP].[dbo].[RESSOURC] r ON t.Ident = r.Coderessource
+            WHERE CAST(t.DateDebut AS DATE) = CAST(GETDATE() AS DATE)
+            GROUP BY t.Ident, r.Designation1, t.Statut
+            ORDER BY MAX(t.DateCreation) DESC
+        '''
+        
+        cursor.execute(query)
+        operateurs_badges = cursor.fetchall()
+        
+        # Conversion en liste de dictionnaires
+        result = []
+        for row in operateurs_badges:
+            result.append({
+                'operateur': row[0],
+                'nom': row[1] if row[1] else 'Nom non trouvé',
+                'nombre_sessions': row[2],
+                'derniere_activite': row[3].isoformat() if row[3] else None,
+                'statut': row[4]
+            })
+        
+        conn.close()
+        return jsonify({'operateurs_badges': result, 'success': True})
         
     except Exception as e:
         return jsonify({'error': str(e), 'success': False}), 500
@@ -501,10 +548,11 @@ def test_ressourc_table():
         
         cursor = conn.cursor()
         
-        # Test simple de la table RESSOURC
+        # Test d'accès direct à la table RESSOURC dans SEDI_ERP
         query = '''
             SELECT TOP 5 [Coderessource], [Designation1] 
             FROM [SEDI_ERP].[dbo].[RESSOURC]
+            WHERE [Typeressource] = 'O'
         '''
         
         cursor.execute(query)
@@ -838,13 +886,13 @@ def get_ltc_data(code_lancement):
         
         cursor = conn.cursor()
         
-        # Récupération des données LTC
+        # Récupération des données LTC depuis SEDI_ERP (table LCTC réelle)
         query = '''
             SELECT TOP 1 
-                [CodeLancement], [Phase], [CodeRubrique]
+                [CodeLanct], [Phase], [CodeRubrique]
             FROM [SEDI_ERP].[dbo].[LCTC]
-            WHERE [CodeLancement] = ?
-            ORDER BY [CodeLancement] DESC
+            WHERE [CodeLanct] = ?
+            ORDER BY [CodeLanct] DESC
         '''
         
         cursor.execute(query, (code_lancement,))

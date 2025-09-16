@@ -2,7 +2,7 @@ services:
   suivi-app-simple:
     build:
       context: .
-      dockerfile: Dockerfile.simple
+      dockerfile: Dockerfile.simple.fixed
     container_name: suivi-mode-operatoire-simple
     ports:
       - "8080:5000"

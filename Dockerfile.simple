@@ -2,9 +2,12 @@
 FROM node:18-alpine AS frontend-build
 
 WORKDIR /app/frontend
-COPY frontend/package*.json ./
-RUN npm ci --only=production
+COPY frontend/package.json ./
+# Clean install to avoid dependency conflicts
+RUN npm install --omit=dev --force
 COPY frontend/ ./
+# Remove any cached webpack build
+RUN rm -rf node_modules/.cache
 RUN npm run build
 
 FROM python:3.11-slim

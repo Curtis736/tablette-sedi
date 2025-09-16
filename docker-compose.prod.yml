@@ -1,0 +1,44 @@
+services:
+  flask:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: tablette-flask
+    environment:
+      - FLASK_ENV=production
+    ports:
+      - "0.0.0.0:5000:5000"
+    restart: unless-stopped
+
+  backend:
+    build:
+      context: ./backend
+      dockerfile: Dockerfile
+    container_name: tablette-backend
+    environment:
+      - PORT=3000
+      - SQL_SERVER=SERVEURERP
+      - SQL_DATABASE=SEDI_ERP
+      - SQL_USER=QUALITE
+      - SQL_PASSWORD=QUALITE
+      - AUTO_BOOTSTRAP=0
+      - AUTO_EXPORT_ON_START=0
+    ports:
+      - "0.0.0.0:3000:3000"
+    restart: unless-stopped
+    volumes:
+      - ./backend/data:/usr/src/app/data
+      - ./backend/logs:/usr/src/app/logs
+
+  # Optionnel: DNS local si vous souhaitez résoudre un nom personnalisé
+  # Activez seulement si vos clients utilisent ce serveur DNS
+  dns:
+    image: jpillora/dnsmasq:latest
+    container_name: tablette-dns
+    volumes:
+      - ./dns/dnsmasq.conf:/etc/dnsmasq.conf
+    ports:
+      - "53:53/udp"
+      - "53:53/tcp"
+    restart: unless-stopped
+
